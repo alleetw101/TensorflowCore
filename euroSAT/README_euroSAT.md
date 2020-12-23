@@ -3,25 +3,25 @@ alleetw101 <2020.12>
 
 ## Architecture
 
-Layer (type)                 Output Shape              Param #   
-rescaling_22 (Rescaling)     (None, 64, 64, 3)         0         
-conv2d_88 (Conv2D)           (None, 64, 64, 16)        448       
-max_pooling2d_88 (MaxPooling (None, 32, 32, 16)        0         
-conv2d_89 (Conv2D)           (None, 32, 32, 32)        4640      
-max_pooling2d_89 (MaxPooling (None, 16, 16, 32)        0         
-conv2d_90 (Conv2D)           (None, 16, 16, 64)        18496     
-max_pooling2d_90 (MaxPooling (None, 8, 8, 64)          0         
-conv2d_91 (Conv2D)           (None, 8, 8, 128)         73856     
-max_pooling2d_91 (MaxPooling (None, 4, 4, 128)         0         
-dropout_22 (Dropout)         (None, 4, 4, 128)         0         
-flatten_22 (Flatten)         (None, 2048)              0         
-dense_66 (Dense)             (None, 256)               524544    
-dense_67 (Dense)             (None, 128)               32896     
-dense_68 (Dense)             (None, 10)                1290      
-
-Total params: 656,170  
-Trainable params: 656,170  
-Non-trainable params: 0  
+Layer (type)                 | Output Shape              | Param #
+---------------------------- | ------------------------- | ------------
+rescaling_22 (Rescaling)     |(None, 64, 64, 3)         |0         
+conv2d_88 (Conv2D)           |(None, 64, 64, 16)        |448       
+max_pooling2d_88 (MaxPooling |(None, 32, 32, 16)        |0         
+conv2d_89 (Conv2D)           |(None, 32, 32, 32)        |4640      
+max_pooling2d_89 (MaxPooling |(None, 16, 16, 32)        |0         
+conv2d_90 (Conv2D)           |(None, 16, 16, 64)        |18496     
+max_pooling2d_90 (MaxPooling |(None, 8, 8, 64)          |0         
+conv2d_91 (Conv2D)           |(None, 8, 8, 128)         |73856     
+max_pooling2d_91 (MaxPooling |(None, 4, 4, 128)         |0         
+dropout_22 (Dropout)         |(None, 4, 4, 128)         |0         
+flatten_22 (Flatten)         |(None, 2048)              |0         
+dense_66 (Dense)             |(None, 256)               |524544    
+dense_67 (Dense)             |(None, 128)               |32896     
+dense_68 (Dense)             |(None, 10)                |1290      
+Total params: 656,170  |
+Trainable params: 656,170 | 
+Non-trainable params: 0  |
 
 ## Performance (10 Runs)
 

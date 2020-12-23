@@ -3,7 +3,7 @@ alleetw101 <2020.12>
 
 ## Architecture
 
-Layer (type)                 Output Shape              Param #    
+Layer (type)                 Output Shape              Param #   
 rescaling_22 (Rescaling)     (None, 64, 64, 3)         0         
 conv2d_88 (Conv2D)           (None, 64, 64, 16)        448       
 max_pooling2d_88 (MaxPooling (None, 32, 32, 16)        0         
@@ -18,7 +18,7 @@ flatten_22 (Flatten)         (None, 2048)              0
 dense_66 (Dense)             (None, 256)               524544    
 dense_67 (Dense)             (None, 128)               32896     
 dense_68 (Dense)             (None, 10)                1290      
-=================================================================  
+
 Total params: 656,170  
 Trainable params: 656,170  
 Non-trainable params: 0  
@@ -43,6 +43,7 @@ https://github.com/phelber/eurosat
   year={2019},
   publisher={IEEE}
 }
+
 @inproceedings{helber2018introducing,
   title={Introducing EuroSAT: A Novel Dataset and Deep Learning Benchmark for Land Use and Land Cover Classification},
   author={Helber, Patrick and Bischke, Benjamin and Dengel, Andreas and Borth, Damian},
@@ -61,8 +62,7 @@ Tensorflow 2.4
 
 ### Development
 
-Macbook Pro
-
+Macbook Pro  
 CPU: 2.9 GHZ (i7-7820HQ)  
 GPU: None utilized  
 RAM: 16 GB  

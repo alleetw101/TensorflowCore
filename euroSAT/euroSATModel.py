@@ -3,7 +3,8 @@
 #
 # Prediction model trained using the EuroSAT dataset from https://www.tensorflow.org/datasets/catalog/eurosat.
 # Characterizes 64x64 RGB satellite images into 10 geographical landmarks.
-# AnnualCrop, Forest, HerbaceousVegetation, Highway, Industrial, Pasture, PermanentCrop, Residential, River, Sea/Lake
+# ['AnnualCrop', 'Forest', 'HerbaceousVegetation', 'Highway', 'Industrial', 'Pasture', 'PermanentCrop', 'Residential',
+# 'River', 'SeaLake']
 
 import tensorflow as tf
 from tensorflow import keras
@@ -34,15 +35,12 @@ class EuroSAT:
         layers.Dense(10)
     ])
 
+    # Class initialization with loading of dataset
     def __init__(self, usetfds: bool = False, datasetpath: str = "euroSAT_Dataset", batchsize: int = 64):
         self.batch_size = batchsize
 
         if usetfds:
-            # Load dataset
             ds = tfds.load("eurosat", shuffle_files=False, split='train', as_supervised=True, with_info=False)
-
-            self.class_names = ['AnnualCrop', 'Forest', 'HerbaceousVegetation', 'Highway', 'Industrial', 'Pasture',
-                                'PermanentCrop', 'Residential', 'River', 'SeaLake']
 
             num_images = ds.cardinality().numpy()
             train_size = int(num_images * 0.7)
@@ -54,19 +52,15 @@ class EuroSAT:
             self.dev_ds = train_dev_ds.skip(train_size).take(dev_size).batch(self.batch_size)
             self.test_ds = ds.skip(test_cutoff).batch(self.batch_size)
         else:
-            # Load dataset
-            dataset_path = datasetpath
-
-            self.train_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(dataset_path, "train"),
-                                                                             seed=2020,
-                                                                             image_size=(64, 64), batch_size=self.batch_size)
-            self.dev_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(dataset_path, "dev"), seed=2020,
-                                                                           image_size=(64, 64), batch_size=self.batch_size)
-            self.test_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(dataset_path, "test"),
-                                                                            seed=2020,
-                                                                            image_size=(64, 64), batch_size=self.batch_size)
-            self.class_names = self.train_ds.class_names
-        self.num_classes = len(self.class_names)
+            self.train_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(datasetpath, "train"),
+                                                                             seed=2020, image_size=(64, 64),
+                                                                             batch_size=self.batch_size)
+            self.dev_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(datasetpath, "dev"),
+                                                                           seed=2020, image_size=(64, 64),
+                                                                           batch_size=self.batch_size)
+            self.test_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(datasetpath, "test"),
+                                                                            seed=2020, image_size=(64, 64),
+                                                                            batch_size=self.batch_size)
 
         # Optimize performance
         AUTOTUNE = tf.data.experimental.AUTOTUNE
@@ -76,19 +70,16 @@ class EuroSAT:
     def trainModel(self, epochs: int = 120, visualize: bool = True, savevisualize: bool = False,
                    savevisualizepath: str = 'euroSATModelTraining', savemodel: bool = False,
                    savemodeloverwrite: bool = False, savemodelfilepath: str = 'euroSATSavedModel'):
-        learning_rate = 0.001
-        optimizer = "Adam"
-        self.model.compile(optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
-                      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-                      metrics=['accuracy'])
 
-        epochs = epochs
-        self.history = self.model.fit(self.train_ds, validation_data=self.dev_ds, epochs=epochs)
+        self.model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
+                           loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                           metrics=['accuracy'])
+
+        train_history = self.model.fit(self.train_ds, validation_data=self.dev_ds, epochs=epochs)
 
         def visualizeTraining(history):
             acc = history.history['accuracy']
             val_acc = history.history['val_accuracy']
-
             loss = history.history['loss']
             val_loss = history.history['val_loss']
 
@@ -107,9 +98,8 @@ class EuroSAT:
             plt.legend(loc='lower left')
             plt.title('Loss')
 
-            plt.suptitle(
-                f'euroSATModel\nBatch size: {self.batch_size}, Optimizer: {optimizer}(lr: {learning_rate}), ' +
-                f'\nRegularizer: l2(0.001), Epochs: {epochs}')
+            plt.suptitle(f'euroSATModel\nBatch size: {self.batch_size}, Epochs: {epochs}')
+
             if savevisualize:
                 plt.savefig(savevisualizepath)
 
@@ -119,7 +109,7 @@ class EuroSAT:
             self.model.save(savemodelfilepath, overwrite=savemodeloverwrite)
 
         if visualize:
-            visualizeTraining(self.history)
+            visualizeTraining(train_history)
 
 
 def euroSATSavedModelPrediction(savedmodelpath: str, predictfilepath: str):
@@ -135,4 +125,3 @@ def euroSATSavedModelPrediction(savedmodelpath: str, predictfilepath: str):
     score = tf.nn.softmax(predictions[0])
     print(f"This image most likely belongs to {class_names[np.argmax(score)]} with a {100 * np.max(score)} " +
           f"percent confidence.")
-

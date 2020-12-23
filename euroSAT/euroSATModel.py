@@ -4,100 +4,135 @@
 # Prediction model trained using the EuroSAT dataset from https://www.tensorflow.org/datasets/catalog/eurosat.
 # Characterizes 64x64 RGB satellite images into 10 geographical landmarks.
 # AnnualCrop, Forest, HerbaceousVegetation, Highway, Industrial, Pasture, PermanentCrop, Residential, River, Sea/Lake
-# TODO: load images into dataset using tf.data (finer control) over keras image_dataset_from_directory()
 
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+import tensorflow_datasets as tfds
+import numpy as np
 import matplotlib.pyplot as plt
 import os.path
-import time
-
-# Load dataset
-dataset_path = "euroSAT_Dataset"
-batch_size = 128
-train_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(dataset_path, "train"), seed=2020,
-                                                            image_size=(64, 64), batch_size=batch_size)
-dev_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(dataset_path, "dev"), seed=2020,
-                                                          image_size=(64, 64), batch_size=batch_size)
-test_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(dataset_path, "test"), seed=2020,
-                                                           image_size=(64, 64), batch_size=batch_size)
-class_names = train_ds.class_names
-num_classes = len(class_names)
-print(class_names)
-
-# Visualize dataset
-# plt.figure(figsize=(10, 10))
-# for sample, sample_label in train_ds.take(1):
-#     for i in range(9):
-#         _ = plt.subplot(3, 3, i + 1)
-#         plt.imshow(sample[i].numpy().astype("uint8"))
-#         plt.title(class_names[sample_label[i]])
-
-# plt.show()
-for sample, sample_label in train_ds.take(1):
-    print(sample.shape)
-
-# Optimize performance
-AUTOTUNE = tf.data.experimental.AUTOTUNE
-
-train_ds = train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
-dev_ds = dev_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 
-regularizer = keras.regularizers.l2(0.001)
-# Create model
-model = keras.models.Sequential([
-    layers.experimental.preprocessing.Rescaling(1./255, input_shape=(64, 64, 3)),
-    layers.Conv2D(16, 3, padding='same', activation='relu', kernel_regularizer=regularizer),
-    layers.MaxPooling2D(),
-    layers.Conv2D(32, 3, padding='same', activation='relu', kernel_regularizer=regularizer),
-    layers.MaxPooling2D(),
-    layers.Conv2D(64, 3, padding='same', activation='relu', kernel_regularizer=regularizer),
-    layers.MaxPooling2D(),
-    layers.Conv2D(128, 3, padding='same', activation='relu', kernel_regularizer=regularizer),
-    layers.MaxPooling2D(),
-    layers.Dropout(0.2),
-    layers.Flatten(),
-    layers.Dense(256, activation='relu', kernel_regularizer=regularizer),
-    layers.Dense(128, activation='relu', kernel_regularizer=regularizer),
-    layers.Dense(num_classes)
-])
+class EuroSAT:
+    # Create model
+    regularizer = keras.regularizers.l2(0.001)
+    model = keras.models.Sequential([
+        layers.experimental.preprocessing.Rescaling(1. / 255, input_shape=(64, 64, 3)),
+        layers.Conv2D(16, 3, padding='same', activation='relu', kernel_regularizer=regularizer),
+        layers.MaxPooling2D(),
+        layers.Conv2D(32, 3, padding='same', activation='relu', kernel_regularizer=regularizer),
+        layers.MaxPooling2D(),
+        layers.Conv2D(64, 3, padding='same', activation='relu', kernel_regularizer=regularizer),
+        layers.MaxPooling2D(),
+        layers.Conv2D(128, 3, padding='same', activation='relu', kernel_regularizer=regularizer),
+        layers.MaxPooling2D(),
+        layers.Dropout(0.2),
+        layers.Flatten(),
+        layers.Dense(256, activation='relu', kernel_regularizer=regularizer),
+        layers.Dense(128, activation='relu', kernel_regularizer=regularizer),
+        layers.Dense(10)
+    ])
 
-learning_rate = 0.001
-optimizer = "Adam"
-model.compile(optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-              metrics=['accuracy'])
+    def __init__(self, usetfds: bool = False, datasetpath: str = "euroSAT_Dataset", batchsize: int = 64):
+        self.batch_size = batchsize
 
-epochs = 100
-history = model.fit(train_ds, validation_data=dev_ds, epochs=epochs)
+        if usetfds:
+            # Load dataset
+            ds = tfds.load("eurosat", shuffle_files=False, split='train', as_supervised=True, with_info=False)
 
-acc = history.history['accuracy']
-val_acc = history.history['val_accuracy']
+            self.class_names = ['AnnualCrop', 'Forest', 'HerbaceousVegetation', 'Highway', 'Industrial', 'Pasture',
+                                'PermanentCrop', 'Residential', 'River', 'SeaLake']
 
-loss = history.history['loss']
-val_loss = history.history['val_loss']
+            num_images = ds.cardinality().numpy()
+            train_size = int(num_images * 0.7)
+            dev_size = int(num_images * 0.2)
+            test_cutoff = int(num_images * 0.9)
 
-epochs_range = range(epochs)
+            train_dev_ds = ds.take(test_cutoff).shuffle(test_cutoff)
+            self.train_ds = train_dev_ds.take(train_size).batch(self.batch_size)
+            self.dev_ds = train_dev_ds.skip(train_size).take(dev_size).batch(self.batch_size)
+            self.test_ds = ds.skip(test_cutoff).batch(self.batch_size)
+        else:
+            # Load dataset
+            dataset_path = datasetpath
 
-plt.figure(figsize=(8, 8))
-plt.subplot(1, 2, 1)
-plt.plot(epochs_range, acc, label='Training Accuracy')
-plt.plot(epochs_range, val_acc, label='Validation Accuracy')
-plt.legend(loc='lower right')
-plt.title('Accuracy')
+            self.train_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(dataset_path, "train"),
+                                                                             seed=2020,
+                                                                             image_size=(64, 64), batch_size=self.batch_size)
+            self.dev_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(dataset_path, "dev"), seed=2020,
+                                                                           image_size=(64, 64), batch_size=self.batch_size)
+            self.test_ds = keras.preprocessing.image_dataset_from_directory(os.path.join(dataset_path, "test"),
+                                                                            seed=2020,
+                                                                            image_size=(64, 64), batch_size=self.batch_size)
+            self.class_names = self.train_ds.class_names
+        self.num_classes = len(self.class_names)
 
-plt.subplot(1, 2, 2)
-plt.plot(epochs_range, loss, label='Training Loss')
-plt.plot(epochs_range, val_loss, label='Validation Loss')
-plt.legend(loc='lower left')
-plt.title('Loss')
+        # Optimize performance
+        AUTOTUNE = tf.data.experimental.AUTOTUNE
+        self.train_ds = self.train_ds.cache().shuffle(1000).prefetch(buffer_size=AUTOTUNE)
+        self.dev_ds = self.dev_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
-time = time.strftime('%y%m%d_%H%M', time.localtime())
+    def trainModel(self, epochs: int = 120, visualize: bool = True, savevisualize: bool = False,
+                   savevisualizepath: str = 'euroSATModelTraining', savemodel: bool = False,
+                   savemodeloverwrite: bool = False, savemodelfilepath: str = 'euroSATSavedModel'):
+        learning_rate = 0.001
+        optimizer = "Adam"
+        self.model.compile(optimizer=keras.optimizers.Adam(learning_rate=learning_rate),
+                      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                      metrics=['accuracy'])
 
-plt.suptitle(f'euroSATModel<{time}>\nBatch size: {batch_size}, Optimizer: {optimizer}(lr: {learning_rate}), ' +
-             f'\nRegularizer: l2(0.001), Epochs: {epochs}')
-plt.savefig(os.path.join("euroSAT_Training_Graphs", time))
+        epochs = epochs
+        self.history = self.model.fit(self.train_ds, validation_data=self.dev_ds, epochs=epochs)
 
-plt.show()
+        def visualizeTraining(history):
+            acc = history.history['accuracy']
+            val_acc = history.history['val_accuracy']
+
+            loss = history.history['loss']
+            val_loss = history.history['val_loss']
+
+            epochs_range = range(epochs)
+
+            plt.figure(figsize=(8, 8))
+            plt.subplot(1, 2, 1)
+            plt.plot(epochs_range, acc, label='Training Accuracy')
+            plt.plot(epochs_range, val_acc, label='Validation Accuracy')
+            plt.legend(loc='lower right')
+            plt.title('Accuracy')
+
+            plt.subplot(1, 2, 2)
+            plt.plot(epochs_range, loss, label='Training Loss')
+            plt.plot(epochs_range, val_loss, label='Validation Loss')
+            plt.legend(loc='lower left')
+            plt.title('Loss')
+
+            plt.suptitle(
+                f'euroSATModel\nBatch size: {self.batch_size}, Optimizer: {optimizer}(lr: {learning_rate}), ' +
+                f'\nRegularizer: l2(0.001), Epochs: {epochs}')
+            if savevisualize:
+                plt.savefig(savevisualizepath)
+
+            plt.show()
+
+        if savemodel:
+            self.model.save(savemodelfilepath, overwrite=savemodeloverwrite)
+
+        if visualize:
+            visualizeTraining(self.history)
+
+
+def euroSATSavedModelPrediction(savedmodelpath: str, predictfilepath: str):
+    newmodel = tf.keras.models.load_model(savedmodelpath)
+    class_names = ['AnnualCrop', 'Forest', 'HerbaceousVegetation', 'Highway', 'Industrial', 'Pasture',
+                   'PermanentCrop', 'Residential', 'River', 'SeaLake']
+
+    image = keras.preprocessing.image.load_img(predictfilepath, target_size=(64, 64))
+    image_array = keras.preprocessing.image.img_to_array(image)
+    image_array = tf.expand_dims(image_array, 0)
+
+    predictions = newmodel.predict(image_array)
+    score = tf.nn.softmax(predictions[0])
+    print(f"This image most likely belongs to {class_names[np.argmax(score)]} with a {100 * np.max(score)} " +
+          f"percent confidence.")
+

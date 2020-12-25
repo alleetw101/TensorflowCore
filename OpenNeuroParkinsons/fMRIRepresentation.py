@@ -17,7 +17,7 @@ data = sitk.GetArrayFromImage(img)
 
 
 def axial_slices3d(data_array) -> np.ndarray:
-    return np.transpose(data_array, [1, 2, 0])
+    return np.transpose(data_array, [1, 2, 0, 3])
 
 
 def coronal_slices3d(data_array) -> np.ndarray:
@@ -30,29 +30,29 @@ def sagittal_slices3d(data_array) -> np.ndarray:
 
 # Singular 2D Representation using matplotlib.pyplot
 # plt.figure(figsize=(5, 5))
-# plt.imshow(axial_slices3d(data)[110], cmap='gray')
+# plt.imshow(axial_slices3d(mri_image)[110], cmap='gray')
 # plt.suptitle("axial, flip(axis=1) @ slice 110\nHigher index is MRI left")
 # plt.ylabel("Front")
 # plt.xlabel("Bottom")
 # plt.show()
 
-axial = sagittal_slices3d(data)
-
-plt.figure(figsize=(10, 10))
-for i in range(16):
-    plt.subplot(4, 4, i + 1)
-    plt.yticks([])
-    plt.xticks([])
-    plt.title(f'{i * 10}')
-    plt.imshow(axial[i * 10], cmap='gray')
-
-plt.show()
+# axial = sagittal_slices3d(mri_image)
+#
+# plt.figure(figsize=(10, 10))
+# for i in range(16):
+#     plt.subplot(4, 4, i + 1)
+#     plt.yticks([])
+#     plt.xticks([])
+#     plt.title(f'{i * 10}')
+#     plt.imshow(axial[i * 10], cmap='gray')
+#
+# plt.show()
 
 
 # 3D Monocolor Representation using matplotlib.pyplot
 # representationarray = []
 #
-# axial = axial_slices3d(data)
+# axial = axial_slices3d(mri_image)
 # for index in range(len(axial)):
 #     for index2 in range(len(axial[0])):
 #         for index3 in range(len(axial[0][0])):
@@ -61,7 +61,7 @@ plt.show()
 #
 # representationarray = np.array(representationarray)
 #
-# # data=np.array(np.random.random((100,3)))
+# # mri_image=np.array(np.random.random((100,3)))
 # x=representationarray[:, 0]
 # y=representationarray[:, 1]
 # z=representationarray[:, 2]

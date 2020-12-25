@@ -2,6 +2,9 @@
 # https://github.com/alleetw101/TensorflowCore <2020>
 #
 # fMRI dataset from https://openneuro.org/datasets/ds001907/versions/2.0.3 (excludes /derivative)
+#
+# Not in development as of 2020/12 due to lack of feasability given dataset and computational constraints
+#
 
 import tensorflow as tf
 from tensorflow import keras
@@ -66,24 +69,17 @@ train_ds = create_dataset(train_subject_paths)
 dev_ds = create_dataset(dev_subject_paths)
 test_ds = create_dataset(test_subject_paths)
 
-print(train_ds.cardinality().numpy())
-print(train_ds)
-print(dev_ds.cardinality().numpy())
-print(dev_ds)
-print(test_ds.cardinality().numpy())
-print(test_ds)
 
-for example, label in train_ds.take(1):
-    axial = fMRIRepresentation.axial_slices3d(example)
-    plt.figure(figsize=(10, 10))
-    for i in range(16):
-        plt.subplot(4, 4, i + 1)
-        plt.yticks([])
-        plt.xticks([])
-        plt.title(f'{i * 10} + {class_names[label]}')
-        plt.imshow(axial[i * 10], cmap='gray')
-
-    plt.show()
+# for example, label in train_ds.take(1):
+#     plt.figure(figsize=(10, 10))
+#     for i in range(16):
+#         plt.subplot(4, 4, i + 1)
+#         plt.yticks([])
+#         plt.xticks([])
+#         plt.title(f'{i * 10} + {class_names[label]}')
+#         plt.imshow(example[i * 10], cmap='gray')
+#
+#     plt.show()
 
 AUTOTUNE = tf.data.experimental.AUTOTUNE
 train_ds = train_ds.cache().shuffle(32).batch(4).prefetch(buffer_size=AUTOTUNE)
@@ -109,5 +105,5 @@ model = keras.models.Sequential([
 model.compile(optimizer=keras.optimizers.Adam(learning_rate=0.001),
               loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
               metrics=['accuracy'])
-epochs = 1
+epochs = 25
 train_history = model.fit(train_ds, validation_data=dev_ds, epochs=epochs)

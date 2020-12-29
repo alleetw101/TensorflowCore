@@ -44,36 +44,70 @@ def plot_slice(data: np.ndarray, plot_index: int, step_size: int = 10, figsize=(
 def axial_slices3d(data_array) -> np.ndarray:
     if data_array.ndim == 3:
         output = np.transpose(data_array, [1, 2, 0])
-    elif data_array.ndim == 4:
+    elif data_array.ndim == 4 and data_array.shape[-1] <= 3:
         output = np.transpose(data_array, [1, 2, 0, 3])
+    elif data_array.ndim == 4 or data_array.ndim == 5:
+        output = data_array
     else:
-        raise AttributeError('Number of dimensions must be 3 or 4')
+        raise AttributeError('Number of dimensions must be 3 or 4 for MRI and 4 or 5 for fMRI')
     return output
 
 
 def coronal_slices3d(data_array) -> np.ndarray:
     if data_array.ndim == 3:
         output = np.transpose(data_array, [2, 1, 0])
-    elif data_array.ndim == 4:
+        output = np.flip(output, axis=[0])
+    elif data_array.ndim == 4 and data_array.shape[-1] <= 3:
         output = np.transpose(data_array, [2, 1, 0, 3])
+        output = np.flip(output, axis=[0])
+    elif data_array.ndim == 4:
+        output = np.transpose(data_array, [0, 3, 2, 1])
+        output = np.rot90(output, axes=(2, 3))
+    elif data_array.ndim == 5:
+        output = np.transpose(data_array, [0, 3, 2, 1, 4])
+        output = np.rot90(output, axes=(2, 3))
     else:
-        raise AttributeError('Number of dimensions must be 3 or 4')
-    return np.flip(output, axis=[0])
+        raise AttributeError('Number of dimensions must be 3 or 4 for MRI and 4 or 5 for fMRI')
+    return output
 
 
-def sagittal_slices3d(data_array) -> np.ndarray:
-    return data_array
+def sagittal_slices3d(data_array) -> np.ndarray:  # Work in progress
+    if data_array.ndim == 3 or (data_array.ndim == 4 and data_array.shape[-1] <= 3):
+        output = data_array
+    elif data_array.ndim == 4:
+        output = np.transpose(data_array, [0, 3, 2, 1])
+        output = np.rot90(output, axes=(2, 3))
+    elif data_array.ndim == 5:
+        output = np.transpose(data_array, [0, 3, 2, 1, 4])
+        output = np.rot90(output, axes=(2, 3))
+    else:
+        raise AttributeError('Number of dimensions must be 3 or 4 for MRI and 4 or 5 for fMRI')
+    return output
 
 
 path = 'sub-01-ses-01-anat-sub-01_ses-01_T1w.nii.gz'
 
-data = load_mri_scan(path)
-data = sagittal_slices3d(data)
+# data = load_mri_scan(path)
+# data = sagittal_slices3d(data)
 # plot_slice(data, plot_index=110)
 
-print(data.shape)
-print(data.shape[0])
-print(np.amax(data))
-print(np.amin(data))
-print(np.dtype(data[0][0][0][0]))
-# print(data[110][110])
+fmripath = 'sub-01-ses-01-func-sub-01_ses-01_task-MainExp_run-01_bold.nii.gz'
+image = sitk.GetArrayFromImage(sitk.ReadImage(fmripath))
+image = np.expand_dims(image, axis=-1)
+image = coronal_slices3d(image)
+image = image / np.amax(image)
+
+print(image.shape)
+
+image[image < 0.01] = 0.0
+
+
+plt.figure(figsize=(10, 10))
+# for index in range(25):
+#     plt.subplot(5, 5, index + 1)
+#     plt.imshow(image[(index * 10)][45], cmap='viridis')
+
+plt.imshow(image[50][45])
+
+plt.show()
+# print(image[200][30][40])

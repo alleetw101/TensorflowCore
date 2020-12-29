@@ -15,7 +15,7 @@ import os.path
 import matplotlib.pyplot as plt
 import time
 
-import fMRIRepresentation
+import MRIProcessingDS001907
 
 dataset_path = 'ds001907'
 

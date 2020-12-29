@@ -98,23 +98,23 @@ def upscale_volume(image) -> np.ndarray:
 
 
 # Singular 2D Representation using matplotlib.pyplot
-start = time.time()
-pltimage = upscale_slice(axial_slices3d(data)[130])
-print(time.time() - start)
-
-start = time.time()
-pltimage = upscale_slice(sagittal_slices3d(data)[130])
-print(time.time() - start)
-# pltimage = upscale_volume(sagittal_slices3d(data))[130]
-plt.figure(figsize=(10, 10))
-plt.imshow(pltimage, cmap='gray')
-# plt.suptitle("axial, flip(axis=1) @ slice 110\nHigher index is MRI left")
-# plt.ylabel("Front")
-# plt.xlabel("Bottom")
-plt.show()
-print(type(pltimage))
-print(pltimage.dtype)
-print(pltimage.shape)
+# start = time.time()
+# pltimage = upscale_slice(axial_slices3d(data)[130])
+# print(time.time() - start)
+#
+# start = time.time()
+# pltimage = upscale_slice(sagittal_slices3d(data)[130])
+# print(time.time() - start)
+# # pltimage = upscale_volume(sagittal_slices3d(data))[130]
+# plt.figure(figsize=(10, 10))
+# plt.imshow(pltimage, cmap='gray')
+# # plt.suptitle("axial, flip(axis=1) @ slice 110\nHigher index is MRI left")
+# # plt.ylabel("Front")
+# # plt.xlabel("Bottom")
+# plt.show()
+# print(type(pltimage))
+# print(pltimage.dtype)
+# print(pltimage.shape)
 
 # axial = sagittal_slices3d(data)
 # plt.figure(figsize=(10, 10))

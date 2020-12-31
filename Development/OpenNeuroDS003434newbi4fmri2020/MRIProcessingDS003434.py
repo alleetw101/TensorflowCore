@@ -14,20 +14,18 @@ import time
 from PIL import Image
 
 
-def load_mri_scan(filepath: str, pad: bool = True, pad_shape=None, normalize: bool = True, normalize_range=(0, 1),
-                  expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
+def load_mri_scan(filepath: str, use_float64: bool = False, pad: bool = True, pad_shape=None, normalize: bool = True,
+                  normalize_range=(0, 1), expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
                   denoise_upper: float = 0.45) -> np.ndarray:
-    output = sitk.GetArrayFromImage(sitk.ReadImage(filepath))
+    dtype = sitk.sitkFloat64 if use_float64 else sitk.sitkFloat32
+    output = sitk.GetArrayFromImage(sitk.ReadImage(filepath, dtype))
 
     if not (output.ndim == 3 or output.ndim == 4):
         raise FileExistsError('File must contain a 3d or 4d array representable object')
 
     if pad:
         if pad_shape is None:
-            if output.ndim == 3:
-                pad_shape = (176, 256, 256)
-            else:
-                pad_shape = (280, 52, 84, 84)
+            pad_shape = (280, 52, 84, 84) if output.ndim == 4 else (176, 256, 256)
         elif len(pad_shape) != output.ndim:
             raise ValueError(f'pad_shape must be a tuple of {output.ndim} int values')
 
@@ -47,12 +45,12 @@ def load_mri_scan(filepath: str, pad: bool = True, pad_shape=None, normalize: bo
         output = np.pad(output, pad_array, mode='constant', constant_values=0.0)
 
     if normalize:
-        output = output / np.amax(output)
+        output /= np.amax(output)
 
         if denoise:
             output[output < denoise_lower] = 0.0
             output[output > denoise_upper] = 0.0
-            output = output / np.amax(output)
+            output /= np.amax(output)
 
         if normalize_range != (0, 1):
             output *= (normalize_range[1] - normalize_range[0])
@@ -62,6 +60,51 @@ def load_mri_scan(filepath: str, pad: bool = True, pad_shape=None, normalize: bo
         output = np.expand_dims(output, axis=-1)
 
     return output
+
+
+def load_dataset(filepath: str, fmri: bool = False, loading_status: bool = True, use_float64: bool = False,
+                 pad: bool = True, pad_shape=None, normalize: bool = True, normalize_range=(0, 1),
+                 expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
+                 denoise_upper: float = 0.45) -> np.ndarray:
+    scan_paths = list(map(lambda x: os.path.join(filepath, x, 'ses-01'),
+                          [f for f in os.listdir(filepath) if 'sub' in f]))
+    output = []
+    fmri_list = []
+
+    if fmri:
+        scan_paths = (list(map(lambda x: os.path.join(x, 'func'), scan_paths)))
+        scan_paths.sort()
+
+        for path in scan_paths:
+            temp_list = [os.path.join(path, f) for f in os.listdir(path) if '.nii' in f]
+            temp_list.sort()
+            fmri_list.append(temp_list[:5])
+
+        for path_lists in fmri_list:
+            temp_list = []
+            for run_paths in path_lists:
+                starttime = time.time()
+                temp_list.append(
+                    load_mri_scan(run_paths, use_float64=use_float64, pad=pad, pad_shape=pad_shape, normalize=normalize,
+                                  normalize_range=normalize_range, expand_dims=expand_dims, denoise=denoise,
+                                  denoise_lower=denoise_lower, denoise_upper=denoise_upper))
+                if loading_status:
+                    print(f'Loaded ({time.time() - starttime:0.3}s): ' + run_paths)
+            output.append(temp_list)
+    else:
+        scan_paths = list(map(lambda x: os.path.join(x, 'anat'), scan_paths))
+        scan_paths = list(map(lambda x: os.path.join(x, [f for f in os.listdir(x) if '.nii' in f][0]), scan_paths))
+        scan_paths.sort()
+        for path in scan_paths:
+            starttime = time.time()
+            output.append(
+                load_mri_scan(path, use_float64=use_float64, pad=pad, pad_shape=pad_shape, normalize=normalize,
+                              normalize_range=normalize_range, expand_dims=expand_dims, denoise=denoise,
+                              denoise_lower=denoise_lower, denoise_upper=denoise_upper))
+            if loading_status:
+                print(f'Loaded ({time.time() - starttime:0.3}s): ' + path)
+
+    return np.array(output)
 
 
 def plot_slice(data_array: np.ndarray, slice_index: int, time_index: int = 0, step_size: int = 10, figsize=(10, 9),
@@ -149,49 +192,6 @@ def process_png_overlay(filepath: str) -> np.ndarray:
     return overlay
 
 
-def load_dataset(filepath: str, fmri: bool = False, loading_status: bool = True, pad: bool = True, pad_shape=None,
-                 normalize: bool = True, normalize_range=(0, 1), expand_dims: bool = True, denoise: bool = False,
-                 denoise_lower: float = 0.05, denoise_upper: float = 0.45) -> np.ndarray:
-    scan_paths = list(map(lambda x: os.path.join(filepath, x, 'ses-01'),
-                          [f for f in os.listdir(filepath) if 'sub' in f]))
-    output = []
-    fmri_list = []
-
-    if fmri:
-        scan_paths = (list(map(lambda x: os.path.join(x, 'func'), scan_paths)))
-        scan_paths.sort()
-
-        for path in scan_paths:
-            temp_list = [os.path.join(path, f) for f in os.listdir(path) if '.nii' in f]
-            temp_list.sort()
-            fmri_list.append(temp_list[:5])
-
-        for path_lists in fmri_list:
-            temp_list = []
-            for run_paths in path_lists:
-                starttime = time.time()
-                temp_list.append(load_mri_scan(run_paths, pad=pad, pad_shape=pad_shape, normalize=normalize,
-                                               normalize_range=normalize_range, expand_dims=expand_dims,
-                                               denoise=denoise, denoise_lower=denoise_lower,
-                                               denoise_upper=denoise_upper))
-                if loading_status:
-                    print(f'Loaded ({time.time() - starttime:0.3}s): ' + run_paths)
-            output.append(temp_list)
-    else:
-        scan_paths = list(map(lambda x: os.path.join(x, 'anat'), scan_paths))
-        scan_paths = list(map(lambda x: os.path.join(x, [f for f in os.listdir(x) if '.nii' in f][0]), scan_paths))
-        scan_paths.sort()
-        for scanpath in scan_paths:
-            starttime = time.time()
-            output.append(load_mri_scan(scanpath, pad=pad, pad_shape=pad_shape, normalize=normalize,
-                                        normalize_range=normalize_range, expand_dims=expand_dims, denoise=denoise,
-                                        denoise_lower=denoise_lower, denoise_upper=denoise_upper))
-            if loading_status:
-                print(f'Loaded ({time.time() - starttime:0.3}s): ' + scanpath)
-
-    return np.array(output)
-
-
 def testingoverlay():
     data = load_mri_scan('sub-01-ses-01-anat-sub-01_ses-01_T1w.nii.gz', denoise=True)
     data = sagittal_slices(data)
@@ -226,16 +226,18 @@ def testingloaddataset():
     # plt.show()
 
 
-testingloaddataset()
+# testingloaddataset()
 
 
 def generaltesting():
     path = 'sub-01-ses-01-anat-sub-01_ses-01_T1w.nii.gz'
     fmripath = 'sub-01-ses-01-func-sub-01_ses-01_task-MainExp_run-01_bold.nii.gz'
 
-    data = load_mri_scan(path, denoise=True, denoise_lower=0.07, denoise_upper=0.35, normalize=True)
+    data = load_mri_scan(path, denoise=True, normalize=True)
     data = sagittal_slices(data)
-    plot_slice(data, slice_index=10, vplots=4, hplots=4, step_size=10)
+    plot_slice(data, slice_index=40, time_index=100, step_size=10)
+
+    print(type(data[0][0][0][0]))
 
     plt.figure(figsize=(10, 9))
     plt.hist(data.flatten())
@@ -247,3 +249,6 @@ def generaltesting():
     print(np.std(data[data != 0.0]))
     print(np.mean(data))
     print(data[100][100])
+
+
+generaltesting()

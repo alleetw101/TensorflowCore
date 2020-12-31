@@ -99,13 +99,13 @@ def upscale_volume(image) -> np.ndarray:
 
 # Singular 2D Representation using matplotlib.pyplot
 # start = time.time()
-# pltimage = upscale_slice(axial_slices3d(data)[130])
+# pltimage = upscale_slice(axial_slices(data)[130])
 # print(time.time() - start)
 #
 # start = time.time()
-# pltimage = upscale_slice(sagittal_slices3d(data)[130])
+# pltimage = upscale_slice(sagittal_slices(data)[130])
 # print(time.time() - start)
-# # pltimage = upscale_volume(sagittal_slices3d(data))[130]
+# # pltimage = upscale_volume(sagittal_slices(data))[130]
 # plt.figure(figsize=(10, 10))
 # plt.imshow(pltimage, cmap='gray')
 # # plt.suptitle("axial, flip(axis=1) @ slice 110\nHigher index is MRI left")
@@ -116,7 +116,7 @@ def upscale_volume(image) -> np.ndarray:
 # print(pltimage.dtype)
 # print(pltimage.shape)
 
-# axial = sagittal_slices3d(data)
+# axial = sagittal_slices(data)
 # plt.figure(figsize=(10, 10))
 # for i in range(16):
 #     plt.subplot(4, 4, i + 1)
@@ -131,7 +131,7 @@ def upscale_volume(image) -> np.ndarray:
 # 3D Monocolor Representation using matplotlib.pyplot
 # representationarray = []
 #
-# axial = axial_slices3d(mri_image)
+# axial = axial_slices(mri_image)
 # for index in range(len(axial)):
 #     for index2 in range(len(axial[0])):
 #         for index3 in range(len(axial[0][0])):

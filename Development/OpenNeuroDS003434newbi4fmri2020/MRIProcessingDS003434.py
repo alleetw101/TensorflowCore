@@ -12,7 +12,7 @@ import os
 import time
 
 from PIL import Image
-
+import sys
 
 def load_mri_scan(filepath: str, use_float64: bool = False, pad: bool = True, pad_shape=None, normalize: bool = True,
                   normalize_range=(0, 1), expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
@@ -69,12 +69,12 @@ def load_dataset(filepath: str, fmri: bool = False, loading_status: bool = True,
     scan_paths = list(map(lambda x: os.path.join(filepath, x, 'ses-01'),
                           [f for f in os.listdir(filepath) if 'sub' in f]))
     output = []
-    fmri_list = []
 
     if fmri:
         scan_paths = (list(map(lambda x: os.path.join(x, 'func'), scan_paths)))
         scan_paths.sort()
 
+        fmri_list = []
         for path in scan_paths:
             temp_list = [os.path.join(path, f) for f in os.listdir(path) if '.nii' in f]
             temp_list.sort()
@@ -183,27 +183,42 @@ def sagittal_slices(data_array) -> np.ndarray:  # Higher index is MRI left (POV 
 
 
 def process_png_overlay(filepath: str) -> np.ndarray:
-    overlay = np.array(Image.open(filepath))
+    overlay = []
+    image_paths = list(map(lambda x: os.path.join(filepath, x), [f for f in os.listdir(filepath)]))
+    image_paths.sort()
 
-    overlay = overlay[:, :, :1]
-    overlay[overlay < 3] = 0
-    overlay[overlay > 239] = 0
+    for paths in image_paths:
+        overlay.append(np.array(Image.open(paths)))
+
+    overlay = np.array(overlay)
+    overlay = overlay[:, :, :, 1:]
+    overlay[overlay < 50] = 0
+    overlay[overlay >= 50] = 255
 
     return overlay
 
 
 def testingoverlay():
     data = load_mri_scan('sub-01-ses-01-anat-sub-01_ses-01_T1w.nii.gz', denoise=True)
-    data = sagittal_slices(data)
+    # data = sagittal_slices(data)
 
-    overlay = process_png_overlay('11080.png')
+    overlay = process_png_overlay('s1s1SagittalSlicesMasks')
 
     print(overlay.shape)
+    overlay = axial_slices(overlay)
+    data = axial_slices(data)
+
+    mask = np.ma.masked_where(overlay == 0, overlay)
+    print(overlay.shape)
+    print(overlay[110][180])
 
     plt.figure(figsize=(10, 9))
-    plt.imshow(data[80], cmap='gray')
-    plt.imshow(overlay, alpha=0.8)
+    plt.imshow(data[170], cmap='gray')
+    plt.imshow(mask[170], alpha=0.8)
     plt.show()
+
+
+testingoverlay()
 
 
 def testingloaddataset():
@@ -214,8 +229,9 @@ def testingloaddataset():
     # print(data.shape)
     # plot_slice(data, slice_index=110)
 
-    dataset = load_dataset(path, fmri=True)
+    dataset = load_dataset(path, fmri=False)
     print(dataset.shape)
+    print(sys.getsizeof(dataset))
     # plot_slice(dataset[10], slice_index=110)
     # plt.figure(figsize=(10, 9))
     # for num in range(16):
@@ -238,9 +254,9 @@ def generaltesting():
     plot_slice(data, slice_index=40, time_index=100, step_size=10)
 
     print(type(data[0][0][0][0]))
-
+    print(sys.getsizeof(data))
     plt.figure(figsize=(10, 9))
-    plt.hist(data.flatten())
+    plt.hist(data[data != 0.0].flatten())
     plt.show()
     # data = load_mri_scan(fmripath)
     # data = sagittal_slices(data)
@@ -248,7 +264,7 @@ def generaltesting():
 
     print(np.std(data[data != 0.0]))
     print(np.mean(data))
-    print(data[100][100])
+    print(np.median(data[data != 0.0]))
 
 
-generaltesting()
+# generaltesting()

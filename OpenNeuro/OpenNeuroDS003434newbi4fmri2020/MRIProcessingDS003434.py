@@ -14,6 +14,7 @@ import time
 from PIL import Image
 import sys
 
+
 def load_mri_scan(filepath: str, use_float64: bool = False, pad: bool = True, pad_shape=None, normalize: bool = True,
                   normalize_range=(0, 1), expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
                   denoise_upper: float = 0.45) -> np.ndarray:
@@ -62,12 +63,12 @@ def load_mri_scan(filepath: str, use_float64: bool = False, pad: bool = True, pa
     return output
 
 
-def load_dataset(filepath: str, fmri: bool = False, loading_status: bool = True, use_float64: bool = False,
-                 pad: bool = True, pad_shape=None, normalize: bool = True, normalize_range=(0, 1),
-                 expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
-                 denoise_upper: float = 0.45) -> np.ndarray:
-    scan_paths = list(map(lambda x: os.path.join(filepath, x, 'ses-01'),
-                          [f for f in os.listdir(filepath) if 'sub' in f]))
+def load_dataset_ds003434(dir_path: str, fmri: bool = False, loading_status: bool = True, use_float64: bool = False,
+                          pad: bool = True, pad_shape=None, normalize: bool = True, normalize_range=(0, 1),
+                          expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
+                          denoise_upper: float = 0.45) -> np.ndarray:
+    scan_paths = list(map(lambda x: os.path.join(dir_path, x, 'ses-01'),
+                          [f for f in os.listdir(dir_path) if 'sub' in f]))
     output = []
 
     if fmri:
@@ -182,16 +183,16 @@ def sagittal_slices(data_array) -> np.ndarray:  # Higher index is MRI left (POV 
     return output
 
 
-def process_png_overlay(filepath: str) -> np.ndarray:
+def process_png_overlay(dir_path: str, layer: int = 1) -> np.ndarray:
     overlay = []
-    image_paths = list(map(lambda x: os.path.join(filepath, x), [f for f in os.listdir(filepath)]))
+    image_paths = list(map(lambda x: os.path.join(dir_path, x), [f for f in os.listdir(dir_path)]))
     image_paths.sort()
 
     for paths in image_paths:
         overlay.append(np.array(Image.open(paths)))
 
     overlay = np.array(overlay)
-    overlay = overlay[:, :, :, 1:]
+    overlay = overlay[:, :, :, layer:layer + 1]
     overlay[overlay < 50] = 0
     overlay[overlay >= 50] = 255
 
@@ -200,7 +201,6 @@ def process_png_overlay(filepath: str) -> np.ndarray:
 
 def testingoverlay():
     data = load_mri_scan('sub-01-ses-01-anat-sub-01_ses-01_T1w.nii.gz', denoise=True)
-    # data = sagittal_slices(data)
 
     overlay = process_png_overlay('s1s1SagittalSlicesMasks')
 
@@ -229,7 +229,7 @@ def testingloaddataset():
     # print(data.shape)
     # plot_slice(data, slice_index=110)
 
-    dataset = load_dataset(path, fmri=False)
+    dataset = load_dataset_ds003434(path, fmri=False)
     print(dataset.shape)
     print(sys.getsizeof(dataset))
     # plot_slice(dataset[10], slice_index=110)

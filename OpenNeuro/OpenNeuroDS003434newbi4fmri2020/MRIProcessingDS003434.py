@@ -218,9 +218,6 @@ def testingoverlay():
     plt.show()
 
 
-testingoverlay()
-
-
 def testingloaddataset():
     path = 'ds003434'
     filepath = 'ds003434/sub-14/ses-01/anat/sub-14_ses-01_T1w.nii.gz'
@@ -240,9 +237,6 @@ def testingloaddataset():
     #     plt.title(num + 2)
     #
     # plt.show()
-
-
-# testingloaddataset()
 
 
 def generaltesting():
@@ -265,6 +259,3 @@ def generaltesting():
     print(np.std(data[data != 0.0]))
     print(np.mean(data))
     print(np.median(data[data != 0.0]))
-
-
-# generaltesting()

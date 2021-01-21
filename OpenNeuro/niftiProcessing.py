@@ -10,6 +10,17 @@ import SimpleITK as sitk
 def load_mri_scan(filepath: str, use_float64: bool = False, pad: bool = True, pad_shape=None, normalize: bool = True,
                   normalize_range=(0, 1), expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
                   denoise_upper: float = 0.45) -> np.ndarray:
+    """Initialization with dataset processing
+
+    Initializes EuroSAT class and splits dataset for training, validation, and evaluation. Obtains euroSAT dataset
+    from tensorflow_dataset or file system.
+
+    Args:
+        filepath: A string corresponding to the .nii file location
+        use_float64: Optional; If use_float64 is true, float64 is used within returned array, else float32 is used
+        pad: Optional; If pad is true, returned array will be of shape pad_shape
+        normalize: Optional;
+    """
     dtype = sitk.sitkFloat64 if use_float64 else sitk.sitkFloat32
     output = sitk.GetArrayFromImage(sitk.ReadImage(filepath, dtype))
 

@@ -14,6 +14,8 @@ import time
 from PIL import Image
 import sys
 
+import niftiProcessing
+
 
 def load_mri_scan(filepath: str, use_float64: bool = False, pad: bool = True, pad_shape=None, normalize: bool = True,
                   normalize_range=(0, 1), expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
@@ -183,16 +185,17 @@ def sagittal_slices(data_array) -> np.ndarray:  # Higher index is MRI left (POV 
     return output
 
 
-def process_png_overlay(dir_path: str, layer: int = 1) -> np.ndarray:
+def process_png_overlay(dir_path: str, layered: bool = False, layer: int = 1) -> np.ndarray:
     overlay = []
-    image_paths = list(map(lambda x: os.path.join(dir_path, x), [f for f in os.listdir(dir_path)]))
+    image_paths = list(map(lambda x: os.path.join(dir_path, x), [f for f in os.listdir(dir_path) if '.png' in f]))
     image_paths.sort()
 
     for paths in image_paths:
         overlay.append(np.array(Image.open(paths)))
 
     overlay = np.array(overlay)
-    overlay = overlay[:, :, :, layer:layer + 1]
+    if layered:
+        overlay = overlay[:, :, :, layer:layer + 1]
     overlay[overlay < 50] = 0
     overlay[overlay >= 50] = 255
 
@@ -200,9 +203,8 @@ def process_png_overlay(dir_path: str, layer: int = 1) -> np.ndarray:
 
 
 def testingoverlay():
-    data = load_mri_scan('sub-01-ses-01-anat-sub-01_ses-01_T1w.nii.gz', denoise=True)
-
-    overlay = process_png_overlay('s1s1SagittalSlicesMasks')
+    data = niftiProcessing.load_mri_scan('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-01/ses-01/anat/sub-01_ses-01_T1w.nii.gz', denoise=True)
+    overlay = process_png_overlay('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/s1s1SagittalSlicesMasks', layered=True)
 
     print(overlay.shape)
     overlay = axial_slices(overlay)
@@ -219,8 +221,8 @@ def testingoverlay():
 
 
 def testingloaddataset():
-    path = 'ds003434'
-    filepath = 'ds003434/sub-14/ses-01/anat/sub-14_ses-01_T1w.nii.gz'
+    path = 'OpenNeuroDS003434newbi4fmri2020/ds003434'
+    filepath = 'OpenNeuroDS003434newbi4fmri2020/ds003434/sub-14/ses-01/anat/sub-14_ses-01_T1w.nii.gz'
 
     # data = load_mri_scan(filepath, denoise=True)
     # print(data.shape)
@@ -240,12 +242,12 @@ def testingloaddataset():
 
 
 def generaltesting():
-    path = 'sub-01-ses-01-anat-sub-01_ses-01_T1w.nii.gz'
+    path = '/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-01/ses-01/anat/sub-01_ses-01_T1w.nii.gz'
     fmripath = 'sub-01-ses-01-func-sub-01_ses-01_task-MainExp_run-01_bold.nii.gz'
 
-    data = load_mri_scan(path, denoise=True, normalize=True)
+    data = niftiProcessing.load_mri_scan(path, denoise=True, normalize=True)
     data = sagittal_slices(data)
-    plot_slice(data, slice_index=40, time_index=100, step_size=10)
+    niftiProcessing.plot_slice(data, slice_index=40, time_index=100, step_size=10)
 
     print(type(data[0][0][0][0]))
     print(sys.getsizeof(data))
@@ -259,3 +261,6 @@ def generaltesting():
     print(np.std(data[data != 0.0]))
     print(np.mean(data))
     print(np.median(data[data != 0.0]))
+
+testingoverlay()
+# generaltesting()

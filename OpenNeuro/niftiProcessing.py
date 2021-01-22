@@ -10,16 +10,25 @@ import SimpleITK as sitk
 def load_mri_scan(filepath: str, use_float64: bool = False, pad: bool = True, pad_shape=None, normalize: bool = True,
                   normalize_range=(0, 1), expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
                   denoise_upper: float = 0.45) -> np.ndarray:
-    """Initialization with dataset processing
+    """Laod nifti file into numpy array
 
-    Initializes EuroSAT class and splits dataset for training, validation, and evaluation. Obtains euroSAT dataset
-    from tensorflow_dataset or file system.
+    Load nifti data containing MRI/fMRI scans into a numpy array.
 
     Args:
         filepath: A string corresponding to the .nii file location
         use_float64: Optional; If use_float64 is true, float64 is used within returned array, else float32 is used
         pad: Optional; If pad is true, returned array will be of shape pad_shape
-        normalize: Optional;
+        pad_shape: Optional; A tuple specifying desired return shape of array. If none, (176, 256, 256) and
+            (280, 52, 84, 84) will be used for MRI and fMRI nifti files respectively
+        normalize: Optional; If normalize is true, values will be constrained between values provided in normalize_range
+        normalize_range: Optional; A tuple of values for upper and lower bounds for data normalization
+        expand_dims: Optional; If expand_dims is true, the data array will have an expanded dimension
+        denoise: Optional; If denoise is true, only values between denoise_lower and denoise_upper will be kept within
+            a data normalization between 0 and 1.
+        denoise_lower: Optional; A float value for which values less than it within a 0-1 normalized data array is
+            excluded
+        denoise_upper: Optional; A float value for which values more than it within a 0-1 normalized data array is
+            excluded
     """
     dtype = sitk.sitkFloat64 if use_float64 else sitk.sitkFloat32
     output = sitk.GetArrayFromImage(sitk.ReadImage(filepath, dtype))
@@ -68,6 +77,21 @@ def load_mri_scan(filepath: str, use_float64: bool = False, pad: bool = True, pa
 
 def plot_slice(data_array: np.ndarray, slice_index: int, time_index: int = 0, step_size: int = 10, figsize=(10, 9),
                vplots: int = 1, hplots: int = 1, cmap: str = 'gray'):
+    """Plot MRI/fMRI slice(s) in matplotlib
+
+    Plot image(s) of MRI/fMRI slice(s) in matplotlib
+
+    Args:
+        data_array: A numpy array containing data points for an MRI/fMRI scan
+        slice_index: An integer specifying index of slice to plot
+        time_index: Optional; An integer specifying time index ([0]) of slice to plot in fMRI data arrays
+        step_size: Optional; An integer specyfying number of indices to skip in data array when plotting two or more
+            slices
+        figsize: Optional; A tuple specyfing matplotlib figure size
+        vplots: Optional; An integer specyfying number of vertical plots in matplotlib figure
+        hplots: Optional; An integer specyfying number of horizontal plots in matplotlib figure
+        cmap: Optional; A string specifying matplotlib plot cmap(s)
+    """
     plt.figure(figsize=figsize)
 
     if data_array.ndim == 3 or (data_array.ndim == 4 and data_array.shape[-1] <= 3):

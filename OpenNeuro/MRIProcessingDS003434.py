@@ -185,26 +185,30 @@ def sagittal_slices(data_array) -> np.ndarray:  # Higher index is MRI left (POV 
     return output
 
 
-def process_png_overlay(dir_path: str, layered: bool = False, layer: int = 1) -> np.ndarray:
-    overlay = []
-    image_paths = list(map(lambda x: os.path.join(dir_path, x), [f for f in os.listdir(dir_path) if '.png' in f]))
+def load_mask(dir_path: str, file_ext: str = '.png', layered: bool = False, layer: int = 1, denoise: bool = True,
+              denoise_cutoff: int = 50, expand_dims: bool = True) -> np.ndarray:
+    image_paths = list(map(lambda x: os.path.join(dir_path, x), [f for f in os.listdir(dir_path) if file_ext in f]))
     image_paths.sort()
 
+    overlay = []
     for paths in image_paths:
         overlay.append(np.array(Image.open(paths)))
 
     overlay = np.array(overlay)
     if layered:
         overlay = overlay[:, :, :, layer:layer + 1]
-    overlay[overlay < 50] = 0
-    overlay[overlay >= 50] = 255
+    if not expand_dims:
+        overlay = np.squeeze(overlay, axis=-1)
+    if denoise:
+        overlay[overlay < denoise_cutoff] = 0
+        overlay[overlay >= denoise_cutoff] = 255
 
     return overlay
 
 
 def testingoverlay():
     data = niftiProcessing.load_mri_scan('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-01/ses-01/anat/sub-01_ses-01_T1w.nii.gz', denoise=True)
-    overlay = process_png_overlay('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/s1s1SagittalSlicesMasks', layered=True)
+    overlay = load_mask('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/s1s1SagittalSlicesMasks', layered=True)
 
     print(overlay.shape)
     overlay = axial_slices(overlay)
@@ -262,5 +266,9 @@ def generaltesting():
     print(np.mean(data))
     print(np.median(data[data != 0.0]))
 
-testingoverlay()
+# testingoverlay()
 # generaltesting()
+# overlay = load_mask('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/s1s1SagittalSlicesMasks', layered=True, expand_dims=True)
+# print(overlay.shape)
+if '':
+    print('True')

@@ -7,7 +7,6 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-import SimpleITK as sitk
 import os
 import time
 
@@ -15,54 +14,6 @@ from PIL import Image
 import sys
 
 import niftiProcessing
-
-
-def load_mri_scan(filepath: str, use_float64: bool = False, pad: bool = True, pad_shape=None, normalize: bool = True,
-                  normalize_range=(0, 1), expand_dims: bool = True, denoise: bool = False, denoise_lower: float = 0.05,
-                  denoise_upper: float = 0.45) -> np.ndarray:
-    dtype = sitk.sitkFloat64 if use_float64 else sitk.sitkFloat32
-    output = sitk.GetArrayFromImage(sitk.ReadImage(filepath, dtype))
-
-    if not (output.ndim == 3 or output.ndim == 4):
-        raise FileExistsError('File must contain a 3d or 4d array representable object')
-
-    if pad:
-        if pad_shape is None:
-            pad_shape = (280, 52, 84, 84) if output.ndim == 4 else (176, 256, 256)
-        elif len(pad_shape) != output.ndim:
-            raise ValueError(f'pad_shape must be a tuple of {output.ndim} int values')
-
-        pad_array = []
-        for index in range(len(pad_shape)):
-            if pad_shape[index] - output.shape[index] >= 0:
-                pad_array.append((0, pad_shape[index] - output.shape[index]))
-            else:
-                shape = list(output.shape)
-                shape[index] = pad_shape[index]
-                if output.ndim == 3:
-                    output = output[:shape[0], :shape[1], :shape[2]]
-                else:
-                    output = output[:shape[0], :shape[1], :shape[2], :shape[3]]
-                pad_array.append((0, pad_shape[index] - output.shape[index]))
-
-        output = np.pad(output, pad_array, mode='constant', constant_values=0.0)
-
-    if normalize:
-        output /= np.amax(output)
-
-        if denoise:
-            output[output < denoise_lower] = 0.0
-            output[output > denoise_upper] = 0.0
-            output /= np.amax(output)
-
-        if normalize_range != (0, 1):
-            output *= (normalize_range[1] - normalize_range[0])
-            output += normalize_range[0]
-
-    if expand_dims:
-        output = np.expand_dims(output, axis=-1)
-
-    return output
 
 
 def load_dataset_ds003434(dir_path: str, fmri: bool = False, loading_status: bool = True, use_float64: bool = False,
@@ -88,9 +39,10 @@ def load_dataset_ds003434(dir_path: str, fmri: bool = False, loading_status: boo
             for run_paths in path_lists:
                 starttime = time.time()
                 temp_list.append(
-                    load_mri_scan(run_paths, use_float64=use_float64, pad=pad, pad_shape=pad_shape, normalize=normalize,
-                                  normalize_range=normalize_range, expand_dims=expand_dims, denoise=denoise,
-                                  denoise_lower=denoise_lower, denoise_upper=denoise_upper))
+                    niftiProcessing.load_mri_scan(run_paths, use_float64=use_float64, pad=pad, pad_shape=pad_shape,
+                                                  normalize=normalize, normalize_range=normalize_range,
+                                                  expand_dims=expand_dims, denoise=denoise, denoise_lower=denoise_lower,
+                                                  denoise_upper=denoise_upper))
                 if loading_status:
                     print(f'Loaded ({time.time() - starttime:0.3}s): ' + run_paths)
             output.append(temp_list)
@@ -101,40 +53,17 @@ def load_dataset_ds003434(dir_path: str, fmri: bool = False, loading_status: boo
         for path in scan_paths:
             starttime = time.time()
             output.append(
-                load_mri_scan(path, use_float64=use_float64, pad=pad, pad_shape=pad_shape, normalize=normalize,
-                              normalize_range=normalize_range, expand_dims=expand_dims, denoise=denoise,
-                              denoise_lower=denoise_lower, denoise_upper=denoise_upper))
+                niftiProcessing.load_mri_scan(path, use_float64=use_float64, pad=pad, pad_shape=pad_shape,
+                                              normalize=normalize, normalize_range=normalize_range,
+                                              expand_dims=expand_dims, denoise=denoise, denoise_lower=denoise_lower,
+                                              denoise_upper=denoise_upper))
             if loading_status:
                 print(f'Loaded ({time.time() - starttime:0.3}s): ' + path)
 
     return np.array(output)
 
 
-def plot_slice(data_array: np.ndarray, slice_index: int, time_index: int = 0, step_size: int = 10, figsize=(10, 9),
-               vplots: int = 1, hplots: int = 1, cmap: str = 'gray'):
-    plt.figure(figsize=figsize)
-
-    if data_array.ndim == 3 or (data_array.ndim == 4 and data_array.shape[-1] <= 3):
-        for position in range(vplots * hplots):
-            plt.subplot(vplots, hplots, position + 1)
-            plt.xticks([])
-            plt.yticks([])
-            plt.imshow(data_array[slice_index + (position * step_size)], cmap=cmap)
-            plt.title(f'Slice index: {slice_index + (position * step_size)}')
-    elif data_array.ndim == 4 or data_array.ndim == 5:
-        for position in range(vplots * hplots):
-            plt.subplot(vplots, hplots, position + 1)
-            plt.xticks([])
-            plt.yticks([])
-            plt.imshow(data_array[time_index][slice_index + (position * step_size)], cmap=cmap)
-            plt.title(f'Time index: {time_index}, Slice index: {slice_index + (position * step_size)}')
-    else:
-        raise ValueError('Input data must be a 3d, 4d, or 5d numpy array')
-
-    plt.show()
-
-
-def axial_slices(data_array) -> np.ndarray:  # Hiegh [-3] index is superior
+def axial_ds003434(data_array) -> np.ndarray:  # Hiegh [-3] index is superior
     if data_array.ndim == 3:
         output = np.transpose(data_array, [1, 2, 0])
         output = np.flip(output, axis=0)
@@ -149,7 +78,7 @@ def axial_slices(data_array) -> np.ndarray:  # Hiegh [-3] index is superior
     return output
 
 
-def coronal_slices(data_array) -> np.ndarray:  # Higher [-3] index is anterior
+def coronal_ds003434(data_array) -> np.ndarray:  # Higher [-3] index is anterior
     if data_array.ndim == 3:
         output = np.transpose(data_array, [2, 1, 0])
         output = np.flip(output, axis=[0])
@@ -169,7 +98,7 @@ def coronal_slices(data_array) -> np.ndarray:  # Higher [-3] index is anterior
     return output
 
 
-def sagittal_slices(data_array) -> np.ndarray:  # Higher index is MRI left (POV right)
+def sagittal_ds003434(data_array) -> np.ndarray:  # Higher index is MRI left (POV right)
     if data_array.ndim == 3 or (data_array.ndim == 4 and data_array.shape[-1] <= 3):
         output = data_array
     elif data_array.ndim == 4:
@@ -207,12 +136,15 @@ def load_mask(dir_path: str, file_ext: str = '.png', layered: bool = False, laye
 
 
 def testingoverlay():
-    data = niftiProcessing.load_mri_scan('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-01/ses-01/anat/sub-01_ses-01_T1w.nii.gz', denoise=True)
-    overlay = load_mask('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/s1s1SagittalSlicesMasks', layered=True)
+    ds_path = '/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-01/ses-01/anat/sub-01_ses-01_T1w.nii.gz'
+    mask_path = '/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/s1s1SagittalSlicesMasks'
+
+    data = niftiProcessing.load_mri_scan(ds_path, denoise=True)
+    overlay = load_mask(mask_path, layered=True)
 
     print(overlay.shape)
-    overlay = axial_slices(overlay)
-    data = axial_slices(data)
+    overlay = axial_ds003434(overlay)
+    data = axial_ds003434(data)
 
     mask = np.ma.masked_where(overlay == 0, overlay)
     print(overlay.shape)
@@ -235,7 +167,7 @@ def testingloaddataset():
     dataset = load_dataset_ds003434(path, fmri=False)
     print(dataset.shape)
     print(sys.getsizeof(dataset))
-    # plot_slice(dataset[10], slice_index=110)
+    # niftiProcessing.plot_slice(dataset[10], slice_index=110)
     # plt.figure(figsize=(10, 9))
     # for num in range(16):
     #     plt.subplot(4, 4, num + 1)
@@ -250,7 +182,7 @@ def generaltesting():
     fmripath = 'sub-01-ses-01-func-sub-01_ses-01_task-MainExp_run-01_bold.nii.gz'
 
     data = niftiProcessing.load_mri_scan(path, denoise=True, normalize=True)
-    data = sagittal_slices(data)
+    data = sagittal_ds003434(data)
     niftiProcessing.plot_slice(data, slice_index=40, time_index=100, step_size=10)
 
     print(type(data[0][0][0][0]))
@@ -259,7 +191,7 @@ def generaltesting():
     plt.hist(data[data != 0.0].flatten())
     plt.show()
     # data = load_mri_scan(fmripath)
-    # data = sagittal_slices(data)
+    # data = sagittal_ds003434(data)
     # plot_slice(data, slice_index=50)
 
     print(np.std(data[data != 0.0]))
@@ -268,7 +200,3 @@ def generaltesting():
 
 # testingoverlay()
 # generaltesting()
-# overlay = load_mask('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/s1s1SagittalSlicesMasks', layered=True, expand_dims=True)
-# print(overlay.shape)
-if '':
-    print('True')

@@ -39,3 +39,11 @@ def load_image_test(datapoint):
     return input_image, input_mask
 
 
+TRAIN_LENGTH = info.splits['train'].num_examples
+BATCH_SIZE = 64
+BUFFER_SIZE = 1000
+STEPS_PER_EPOCH = TRAIN_LENGTH // BATCH_SIZE
+
+train = dataset['train'].map(load_image_train, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+test = dataset['test'].map(load_image_test)
+

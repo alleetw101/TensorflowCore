@@ -47,3 +47,6 @@ STEPS_PER_EPOCH = TRAIN_LENGTH // BATCH_SIZE
 train = dataset['train'].map(load_image_train, num_parallel_calls=tf.data.experimental.AUTOTUNE)
 test = dataset['test'].map(load_image_test)
 
+train_dataset = train.cache().shuffle(BUFFER_SIZE).batch(BATCH_SIZE).repeat()
+train_dataset = train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
+test_dataset = test.batch(BATCH_SIZE)

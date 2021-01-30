@@ -1,7 +1,6 @@
 # niftiProcessing
 # https://github.com/alleetw101/TensorflowCore <2021>
 
-
 import numpy as np
 import matplotlib.pyplot as plt
 import SimpleITK as sitk

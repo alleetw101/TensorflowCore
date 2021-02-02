@@ -157,4 +157,22 @@ def show_predictions(dataset=None, num=1):
         display([sample_image, sample_mask, create_mask(model.predict(sample_image[tf.newaxis, ...]))])
 
 
-show_predictions()
+# show_predictions()
+
+
+class DisplayCallback(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs=None):
+        show_predictions()
+        print(f'\nSample Prediction after epoch {epoch + 1}\n')
+
+
+EPOCHS = 20
+VAL_SUBSPLITS = 5
+VALIDATION_STEPS = info.splits['test'].num_examples // BATCH_SIZE // VAL_SUBSPLITS
+
+model_history = model.fit(train_dataset, epochs=EPOCHS,
+                          steps_per_epoch=STEPS_PER_EPOCH,
+                          validation_steps=VALIDATION_STEPS,
+                          validation_data=test_dataset,
+                          callbacks=[DisplayCallback()])
+

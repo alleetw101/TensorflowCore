@@ -115,7 +115,7 @@ def sagittal_ds003434(data_array) -> np.ndarray:  # Higher index is MRI left (PO
 
 
 def load_mask(dir_path: str, file_ext: str = '.png', layered: bool = False, layer: int = 1, denoise: bool = True,
-              denoise_cutoff: int = 50, expand_dims: bool = True, normalize_value: int = 255) -> np.ndarray:
+              denoise_cutoff: int = 50, expand_dims: bool = True, normalize_value: float = 255.) -> np.ndarray:
     image_paths = list(map(lambda x: os.path.join(dir_path, x), [f for f in os.listdir(dir_path) if file_ext in f]))
     image_paths.sort()
 
@@ -129,7 +129,7 @@ def load_mask(dir_path: str, file_ext: str = '.png', layered: bool = False, laye
     if not expand_dims:
         overlay = np.squeeze(overlay, axis=-1)
     if denoise:
-        overlay[overlay < denoise_cutoff] = 0
+        overlay[overlay < denoise_cutoff] = 0.
         overlay[overlay >= denoise_cutoff] = normalize_value
 
     return overlay

@@ -143,16 +143,16 @@ def testingoverlay():
     overlay = load_mask(mask_path, layered=True)
 
     print(overlay.shape)
-    overlay = axial_ds003434(overlay)
-    data = axial_ds003434(data)
+    # overlay = axial_ds003434(overlay)
+    # data = axial_ds003434(data)
 
     mask = np.ma.masked_where(overlay == 0, overlay)
     print(overlay.shape)
     print(overlay[110][180])
 
     plt.figure(figsize=(10, 9))
-    plt.imshow(data[170], cmap='gray')
-    plt.imshow(mask[170], alpha=0.8)
+    plt.imshow(data[85], cmap='gray')
+    plt.imshow(mask[85], alpha=0.8)
     plt.show()
 
 

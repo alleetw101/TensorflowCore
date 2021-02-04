@@ -21,27 +21,12 @@ val_size = int(0.1 * len(scans))
 test_size = int(0.1 * len(scans))
 train_size = int(len(scans) - val_size - test_size)
 
-print(val_size, test_size)
 train_ds = ds.take(train_size).cache().batch(batch_size).repeat()
 val_ds = ds.skip(train_size).take(val_size).batch(batch_size)
 test_ds = ds.skip(train_size + val_size).batch(batch_size)
 
-print(train_ds.cardinality())
-print(val_ds.cardinality())
-print(test_ds.cardinality())
-
 
 def display(display_list):
-    # plt.figure(figsize=(9, 9))
-    #
-    # title = ['Input Image', 'True Mask', 'Predicted Mask']
-    #
-    # for i in range(len(display_list)):
-    #     plt.subplot(1, len(display_list), i + 1)
-    #     plt.title(title[i])
-    #     plt.imshow(tf.keras.preprocessing.image.array_to_img(display_list[i], data_format='channels_last'))
-    #     plt.axis('off')
-    # plt.show()
     mask = np.ma.masked_where(display_list[1] == 0, display_list[1])
 
     plt.figure(figsize=(10, 9))

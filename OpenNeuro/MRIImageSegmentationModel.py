@@ -10,7 +10,9 @@ import MRIProcessingDS003434
 
 # Preprocessing
 ds_path ='OpenNeuroDS003434newbi4fmri2020/ds003434/sub-01/ses-01/anat/sub-01_ses-01_T1w.nii.gz'
+ds_path2 = 'OpenNeuroDS003434newbi4fmri2020/ds003434/sub-02/ses-01/anat/sub-02_ses-01_T1w.nii.gz'
 mask_path = 'OpenNeuroDS003434newbi4fmri2020/s1s1SagittalSlicesMasks'
+mask_path2 = 'OpenNeuroDS003434newbi4fmri2020/s2s1Masks'
 scans = niftiProcessing.load_mri_scan(ds_path, use_float64=False, denoise=True)
 masks = MRIProcessingDS003434.load_mask(mask_path, layered=True)
 

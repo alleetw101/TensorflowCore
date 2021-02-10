@@ -89,7 +89,40 @@ def png_export(filepath: str, save_dir: str):
             print(index)
 
 
+def png_denoise(dir_path: str, save_dir: str):
+    image_paths = list(map(lambda x: os.path.join(dir_path, x), [f for f in os.listdir(dir_path) if 'png' in f]))
+    image_names = [f for f in os.listdir(dir_path) if 'png' in f]
+    image_paths.sort()
+    image_names.sort()
+
+    for index in range(len(image_paths)):
+        img_array = np.array(Image.open(image_paths[index]))
+
+        img = img_array[:, :, :1]
+        mask = img_array[:, :, 1:]
+
+        # img = np.squeeze(img, axis=-1)
+        # mask = np.squeeze(mask, axis=-1)
+
+        for index_x in range(len(img)):
+            for index_y in range(len(img[index_x])):
+                if img[index_x][index_y] <= 40:
+                    mask[index_x][index_y] = 0
+
+        export_img = np.concatenate((img, mask), axis=-1)
+        export_path = os.path.join(save_dir, image_names[index])
+        export_img = export_img.astype(np.uint8)
+        export_img = Image.fromarray(export_img)
+        export_img.save(export_path)
+
+
+
+
 # plot_test()
-file = '/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-03/ses-01/anat/sub-03_ses-01_T1w.nii.gz'
-save_dir = '/Users/alan/Desktop/s3s1'
-png_export(file, save_dir)
+# file = '/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-03/ses-01/anat/sub-03_ses-01_T1w.nii.gz'
+# save_dir = '/Users/alan/Desktop/s3s1'
+# png_export(file, save_dir)
+
+dir_path = '/Users/alan/Desktop/Colab/DS003434/s2s1/masks'
+save_dir = '/Users/alan/Desktop/Colab/DS003434/s2s1/masks-2'
+png_denoise(dir_path, save_dir)

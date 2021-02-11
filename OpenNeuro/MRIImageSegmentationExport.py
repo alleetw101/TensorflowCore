@@ -11,27 +11,28 @@ import niftiProcessing
 
 
 def plot_test():
-    sample_path = '/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-02/ses-01/anat/sub-02_ses-01_T1w.nii.gz'
+    sample_path = '/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-08/ses-01/anat/sub-08_ses-01_T1w.nii.gz'
     sample = niftiProcessing.load_mri_scan(sample_path, denoise=True)
     sample = np.concatenate((sample,)*3, axis=-1)
     sample_image = sample[85]
 
     model = tf.keras.models.load_model('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/SavedModelMRIImageSegmentation200205_1')
     prediction = model.predict(sample_image[tf.newaxis, ...])
-    print(prediction[0][80])
+
 
     prediction = prediction[0][..., :1]
-    prediction[prediction > -10] = 255
-    prediction[prediction < -10] = 0
+    prediction[prediction > 0] = 255
+    prediction[prediction < 0] = 0
     prediction = np.ma.masked_where(prediction == 0, prediction)
 
-    model1 = tf.keras.models.load_model('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/SavedModelMRIImageSegmentation20200205_2')
+    model1 = tf.keras.models.load_model('/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/SavedModelMRIImageSegmentation20210209_2')
     prediction1 = model1.predict(sample_image[tf.newaxis, ...])
+    print(prediction1[0][80])
 
-    # prediction1[prediction1 < 0] = 0
-    # prediction1[prediction1 > 0] = 255
+    prediction1[prediction1 < 0] = 0
+    prediction1[prediction1 > 0] = 255
     prediction1 = prediction1[0][..., :1]
-    # prediction1 = np.ma.masked_where(prediction1 == 0, prediction1)
+    prediction1 = np.ma.masked_where(prediction1 == 0, prediction1)
 
     plt.figure(figsize=(9, 9))
     plt.xticks([])
@@ -42,7 +43,7 @@ def plot_test():
     plt.subplot(1, 2, 2)
     plt.imshow(sample_image, cmap='gray')
     plt.imshow(prediction1, alpha=0.5)
-    plt.show()
+    # plt.show()
 
     # print(prediction[80])
 
@@ -118,11 +119,11 @@ def png_denoise(dir_path: str, save_dir: str):
 
 
 
-# plot_test()
+plot_test()
 # file = '/Users/alan/Documents/Programming/Python/TensorflowCore/OpenNeuro/OpenNeuroDS003434newbi4fmri2020/ds003434/sub-03/ses-01/anat/sub-03_ses-01_T1w.nii.gz'
 # save_dir = '/Users/alan/Desktop/s3s1'
 # png_export(file, save_dir)
 
-dir_path = '/Users/alan/Desktop/Colab/DS003434/s2s1/masks'
-save_dir = '/Users/alan/Desktop/Colab/DS003434/s2s1/masks-2'
-png_denoise(dir_path, save_dir)
+# dir_path = '/Users/alan/Desktop/Colab/DS003434/s2s1/masks'
+# save_dir = '/Users/alan/Desktop/Colab/DS003434/s2s1/masks-2'
+# png_denoise(dir_path, save_dir)

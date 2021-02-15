@@ -111,3 +111,4 @@ def plot_slice(data_array: np.ndarray, slice_index: int, time_index: int = 0, st
         raise ValueError('Input data must be a 3d, 4d, or 5d numpy array')
 
     plt.show()
+
